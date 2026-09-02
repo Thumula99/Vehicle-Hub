@@ -1,0 +1,52 @@
+name: 🚢 Vehicle-Hub CD Release Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish-release:
+    name: 📦 Package & Publish Release Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 🔨 Publish .NET Backend
+        run: |
+          cd server
+          dotnet publish VehicleHub.csproj -c Release -o ../dist/backend
+
+      - name: 🔧 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 🔨 Export Next.js Frontend
+        run: |
+          cd client
+          npm install
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5001/api
+          NEXT_PUBLIC_SOCKET_URL: http://localhost:5001
+
+      - name: 📁 Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: dist/backend/
+
+      - name: 📁 Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: client/.next/
