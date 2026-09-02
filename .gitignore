@@ -1,32 +1,109 @@
-# Dependencies
-node_modules/
-/.pnp
-.pnp.js
+# ===================================================
+# 🚗 Vehicle-Hub (.gitignore)
+# ===================================================
 
-# Next.js build
+# ---------------------------------------------------
+# 1. .NET & C# Build Artifacts
+# ---------------------------------------------------
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+*.exe
+*.so
+*.dylib
+*.cache
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ---------------------------------------------------
+# 2. Node.js & Next.js Build Outputs
+# ---------------------------------------------------
+node_modules/
 .next/
 out/
 build/
 dist/
+.vercel/
+/.pnp
+.pnp.js
+.pnp.*
 
-# Environment files
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ---------------------------------------------------
+# 3. Environment Variables & Secrets
+# ---------------------------------------------------
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+appsettings.*.local.json
+appsettings.Secrets.json
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
 
-# Server uploads (ignore uploaded files but keep directory)
+# ---------------------------------------------------
+# 4. User Uploads & Media Storage
+# ---------------------------------------------------
 server/uploads/*
 !server/uploads/.gitkeep
+*.tmp
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# OS metadata
+# ---------------------------------------------------
+# 5. OS Metadata & IDE Files
+# ---------------------------------------------------
+# macOS
 .DS_Store
-*.pem
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.hidden
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# JetBrains / Rider / WebStorm
+.idea/
+*.iws
+*.iml
+
+# Visual Studio Code
+*.code-workspace
