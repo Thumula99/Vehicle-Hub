@@ -53,7 +53,7 @@ graph TD
 | **Styling** | Tailwind CSS | `3+` | Modern responsive utility styling, dark/light modes |
 | **Icons** | Lucide React | Latest | Modern, lightweight iconography |
 | **HTTP Client** | Axios / Native Fetch | Latest | REST API integration with auth interceptors |
-| **Backend Runtime** | Node.js | `18+ LTS` | Server-side execution environment |
+| **Backend Runtime** C#
 | **Backend Framework**| Express.js | `4.18+` | REST API routes, middleware pipeline |
 | **Authentication** | JSON Web Tokens (`jsonwebtoken`) + `bcryptjs` | Latest | Stateless auth, secure password hashing |
 | **Real-Time WebSockets**| Socket.IO (`socket.io` & `socket.io-client`)| `4.7+` | Instant messaging, typing indicators, live notifications |
@@ -61,7 +61,7 @@ graph TD
 | **Data Persistence** | Native Node.js `fs/promises` | Built-in | Structured JSON flat-file storage |
 | **Backend Testing** | Jest + Supertest | `29+` | Unit testing, REST API integration test suite |
 | **Frontend Testing** | React Testing Library + Jest | Latest | Component rendering, user event verification |
-
+  **Frontend Testing**| Supabase
 ---
 
 ## 3. Repository Directory Structure
