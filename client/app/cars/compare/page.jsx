@@ -2,148 +2,312 @@
 
 import React, { useState, useEffect } from 'react';
 import { carService } from '../../../services/carService';
-import { SlidersHorizontal, Plus, X, ArrowLeft } from 'lucide-react';
+import { useCompare } from '../../../context/CompareContext';
+import { useWishlist } from '../../../context/WishlistContext';
+import {
+  SlidersHorizontal,
+  Plus,
+  X,
+  ArrowLeft,
+  Heart,
+  MessageSquare,
+  ShieldCheck,
+  CheckCircle,
+  Tag,
+  Zap
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function ComparePage() {
-  const [allCars, setAllCars] = useState([]);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [compareCars, setCompareCars] = useState([]);
+  const { compareCars, removeFromCompare, addToCompare, clearCompare } = useCompare();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const [availableCars, setAvailableCars] = useState([]);
+  const [comparedData, setComparedData] = useState([]);
+  const [highlights, setHighlights] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // Fetch all cars for quick addition selector
   useEffect(() => {
     carService.getCars({ limit: 50 })
       .then(res => {
-        if (res.success) {
-          setAllCars(res.cars);
-          if (res.cars.length >= 2) {
-            setSelectedIds([res.cars[0].id, res.cars[1].id]);
-          }
-        }
+        if (res.success) setAvailableCars(res.cars);
       })
       .catch(console.error);
   }, []);
 
+  // Fetch comparison spec details
   useEffect(() => {
-    if (selectedIds.length >= 2) {
+    const ids = compareCars.map(c => c.id);
+    if (ids.length >= 2) {
       setLoading(true);
-      carService.compareCars(selectedIds)
+      carService.compareCars(ids)
         .then(res => {
-          if (res.success) setCompareCars(res.cars);
+          if (res.success) {
+            setComparedData(res.cars);
+            setHighlights(res.highlights || {});
+          }
         })
         .catch(console.error)
         .finally(() => setLoading(false));
     } else {
-      setCompareCars([]);
+      setComparedData(compareCars);
+      setHighlights({});
     }
-  }, [selectedIds]);
+  }, [compareCars]);
 
-  const addCarToCompare = (id) => {
-    if (selectedIds.length >= 4) {
-      alert('You can compare a maximum of 4 vehicles simultaneously.');
-      return;
+  const fallbackImage = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80';
+
+  const specsList = [
+    {
+      label: 'Price',
+      key: 'price',
+      render: (car) => {
+        const isBest = highlights.lowestPrice && Number(car.price) === highlights.lowestPrice;
+        return (
+          <div className="space-y-1">
+            <span className="text-lg font-extrabold text-sky-600">
+              LKR {car.price ? car.price.toLocaleString() : 'N/A'}
+            </span>
+            {isBest && (
+              <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">
+                Lowest Price
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      label: 'Model Year',
+      key: 'year',
+      render: (car) => {
+        const isNewest = highlights.newestYear && Number(car.year) === highlights.newestYear;
+        return (
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-gray-900">{car.year}</span>
+            {isNewest && (
+              <span className="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                Newest
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      label: 'Mileage',
+      key: 'mileage',
+      render: (car) => {
+        const isLowest = highlights.lowestMileage !== null && Number(car.mileage) === highlights.lowestMileage;
+        return (
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-gray-900">{car.mileage?.toLocaleString()} km</span>
+            {isLowest && (
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                Lowest Mileage
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      label: 'Fuel Type',
+      key: 'fuelType',
+      render: (car) => <span className="font-medium text-gray-700">{car.fuelType}</span>
+    },
+    {
+      label: 'Transmission',
+      key: 'transmission',
+      render: (car) => <span className="font-medium text-gray-700">{car.transmission}</span>
+    },
+    {
+      label: 'Condition',
+      key: 'condition',
+      render: (car) => (
+        <span className="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-1 rounded-lg">
+          {car.condition}
+        </span>
+      )
+    },
+    {
+      label: 'Location',
+      key: 'location',
+      render: (car) => <span className="text-gray-600">{car.location || 'Sri Lanka'}</span>
+    },
+    {
+      label: 'Seller Details',
+      key: 'seller',
+      render: (car) => (
+        <div className="text-xs space-y-1">
+          <p className="font-bold text-gray-900 flex items-center space-x-1">
+            <span>{car.seller?.name || 'Private Seller'}</span>
+            {car.seller?.verifiedSeller && <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />}
+          </p>
+          {car.seller?.phone && <p className="text-gray-500">{car.seller.phone}</p>}
+        </div>
+      )
     }
-    if (!selectedIds.includes(id)) {
-      setSelectedIds(prev => [...prev, id]);
-    }
-  };
-
-  const removeCar = (id) => {
-    setSelectedIds(prev => prev.filter(item => item !== id));
-  };
-
-  const specs = [
-    { label: 'Price', key: 'price', format: (v) => v ? `LKR ${v.toLocaleString()}` : '-' },
-    { label: 'Year', key: 'year' },
-    { label: 'Mileage', key: 'mileage', format: (v) => v ? `${v.toLocaleString()} km` : '-' },
-    { label: 'Fuel Type', key: 'fuelType' },
-    { label: 'Transmission', key: 'transmission' },
-    { label: 'Condition', key: 'condition' },
-    { label: 'Location', key: 'location' }
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div>
-        <Link href="/cars" className="inline-flex items-center space-x-1 text-sm text-gray-500 hover:text-sky-600 transition mb-2">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Catalog</span>
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Compare Vehicles</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Select up to 4 models to compare side-by-side specifications and value.
-        </p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Link href="/cars" className="inline-flex items-center space-x-1 text-sm text-gray-500 hover:text-sky-600 transition mb-2">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Vehicle Catalog</span>
+          </Link>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-sky-50 text-sky-600 rounded-2xl">
+              <SlidersHorizontal className="w-6 h-6" />
+            </div>
+            <h1 className="text-3xl font-extrabold text-gray-900">Side-by-Side Comparison</h1>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Compare specifications, fuel efficiency, pricing, and value across up to 4 models.
+          </p>
+        </div>
+
+        {compareCars.length > 0 && (
+          <button
+            onClick={clearCompare}
+            className="text-xs text-red-600 hover:bg-red-50 px-3 py-2 rounded-xl font-bold transition self-start sm:self-auto border border-red-200"
+          >
+            Clear All Comparison
+          </button>
+        )}
       </div>
 
-      {/* Select Vehicle Dropdowns */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+      {/* Quick Add Selector Bar */}
+      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900 text-sm">Add Vehicles to Comparison ({selectedIds.length}/4)</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Selected Vehicles ({compareCars.length}/4) — Click to Add/Remove
+          </h3>
         </div>
+
         <div className="flex flex-wrap gap-2">
-          {allCars.map(c => {
-            const isSelected = selectedIds.includes(c.id);
+          {availableCars.map(car => {
+            const isSelected = compareCars.some(c => c.id === car.id);
             return (
               <button
-                key={c.id}
-                onClick={() => isSelected ? removeCar(c.id) : addCarToCompare(c.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                key={car.id}
+                onClick={() => isSelected ? removeFromCompare(car.id) : addToCompare(car)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 ${
                   isSelected
-                    ? 'bg-sky-600 text-white border-sky-600'
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
                     : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
                 }`}
               >
-                {isSelected ? '✓ ' : '+ '} {c.title}
+                <span>{isSelected ? '✓ ' : '+ '} {car.title}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Comparison Table */}
+      {/* Comparison Matrix Table */}
       {compareCars.length < 2 ? (
-        <div className="bg-white p-12 rounded-3xl border border-gray-100 text-center space-y-3">
-          <SlidersHorizontal className="w-8 h-8 text-gray-400 mx-auto" />
-          <p className="text-gray-600 font-medium">Please select at least 2 vehicles to compare.</p>
+        <div className="bg-white p-12 rounded-3xl border border-gray-100 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 bg-sky-50 text-sky-600 rounded-3xl flex items-center justify-center mx-auto">
+            <SlidersHorizontal className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800">Select At Least 2 Vehicles to Compare</h3>
+          <p className="text-sm text-gray-400 max-w-md mx-auto">
+            Click the "Compare" button on any vehicle card in the catalog or select models from the quick add bar above.
+          </p>
+          <Link
+            href="/cars"
+            className="inline-block px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-sm transition"
+          >
+            Explore Catalog
+          </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="p-4 w-44 font-bold text-gray-400 uppercase text-xs">Specification</th>
-                {compareCars.map(c => (
-                  <th key={c.id} className="p-4 font-bold text-gray-900 min-w-[200px]">
-                    <div className="flex items-center justify-between">
-                      <span className="line-clamp-1">{c.title}</span>
-                      <button
-                        onClick={() => removeCar(c.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 rounded-full"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              {/* Table Header: Vehicle Cards */}
+              <thead>
+                <tr className="border-b border-gray-100 bg-slate-50/50">
+                  <th className="p-5 w-44 font-bold text-xs uppercase tracking-wider text-gray-400">
+                    Vehicle Model
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {specs.map(spec => (
-                <tr key={spec.key} className="hover:bg-gray-50/50 transition">
-                  <td className="p-4 font-semibold text-gray-500 text-xs uppercase tracking-wider">{spec.label}</td>
-                  {compareCars.map(c => {
-                    const val = c[spec.key];
-                    const display = spec.format ? spec.format(val) : (val || '-');
+                  {comparedData.map(car => {
+                    const displayImg = car.images && car.images.length > 0
+                      ? (car.images[0].startsWith('http') ? car.images[0] : `http://localhost:5001${car.images[0]}`)
+                      : fallbackImage;
+                    const wishlisted = isInWishlist(car.id);
+
                     return (
-                      <td key={c.id} className="p-4 font-medium text-gray-800">
-                        {display}
-                      </td>
+                      <th key={car.id} className="p-5 min-w-[240px] max-w-[280px] align-top font-normal">
+                        <div className="space-y-3">
+                          <div className="relative h-36 rounded-2xl overflow-hidden bg-slate-100 border border-gray-200">
+                            <img
+                              src={displayImg}
+                              alt={car.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.src = fallbackImage; }}
+                            />
+                            <button
+                              onClick={() => removeFromCompare(car.id)}
+                              className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-red-600 transition"
+                              title="Remove from comparison"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-1">
+                            <h4 className="font-bold text-gray-900 text-base line-clamp-1">{car.title}</h4>
+                            <p className="text-xs text-gray-500">{car.make} • {car.model}</p>
+                          </div>
+
+                          <div className="flex items-center space-x-2 pt-1">
+                            <Link
+                              href={`/cars/${car.id}`}
+                              className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-center rounded-xl text-xs transition"
+                            >
+                              Details
+                            </Link>
+
+                            <button
+                              onClick={() => toggleWishlist(car.id)}
+                              className={`p-2 rounded-xl border transition ${
+                                wishlisted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 hover:text-red-500 border-gray-200'
+                              }`}
+                              title="Wishlist"
+                            >
+                              <Heart className={`w-3.5 h-3.5 ${wishlisted ? 'fill-current' : ''}`} />
+                            </button>
+                          </div>
+                        </div>
+                      </th>
                     );
                   })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              {/* Table Body: Specification Rows */}
+              <tbody className="divide-y divide-gray-100">
+                {specsList.map(spec => (
+                  <tr key={spec.key} className="hover:bg-slate-50/50 transition">
+                    <td className="p-5 font-bold text-xs uppercase tracking-wider text-gray-400 bg-slate-50/30">
+                      {spec.label}
+                    </td>
+                    {comparedData.map(car => (
+                      <td key={car.id} className="p-5 align-middle">
+                        {spec.render(car)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
