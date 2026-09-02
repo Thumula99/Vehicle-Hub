@@ -44,15 +44,19 @@ graph TD
 
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Backend Language** | C# | `12` | Strongly-typed, high performance backend logic |
-| **Backend Framework**| ASP.NET Core Web API | `.NET 8.0` | REST API routes, Dependency Injection, Swagger OpenAPI |
-| **Real-Time WebSockets**| Microsoft.AspNetCore.SignalR | `8.0` | Real-time chat, typing indicators, live notifications |
-| **Authentication** | JWT Bearer (`JwtBearerDefaults`) + `BCrypt.Net-Next` | Latest | Stateless auth, secure password hashing |
-| **Frontend Framework** | Next.js (App Router) | `14+` | App router, layouts, server & client components |
-| **Frontend Library** | React | `18+` | UI state, hooks, context state management |
-| **Styling** | Tailwind CSS | `3+` | Responsive utility design system |
-| **Database** | Supabase (PostgreSQL) | Latest | Cloud relational database with local storage fallback |
-| **CI/CD Automation** | GitHub Actions | Latest | Automated testing, compilation, and release packaging |
+| **Frontend Framework** | Next.js (App Router) | `14+` | Page routing, server/client components, layout orchestration |
+| **Frontend Library** | React | `18+` | Reactive UI, hooks, context state management |
+| **Styling** | Tailwind CSS | `3+` | Modern responsive utility styling, dark/light modes |
+| **Icons** | Lucide React | Latest | Modern, lightweight iconography |
+| **HTTP Client** | Axios / Native Fetch | Latest | REST API integration with auth interceptors |
+| **Backend Runtime** | Node.js | `18+ LTS` | Server-side execution environment |
+| **Backend Framework**| Express.js | `4.18+` | REST API routes, middleware pipeline |
+| **Authentication** | JSON Web Tokens (`jsonwebtoken`) + `bcryptjs` | Latest | Stateless auth, secure password hashing |
+| **Real-Time WebSockets**| Socket.IO (`socket.io` & `socket.io-client`)| `4.7+` | Instant messaging, typing indicators, live notifications |
+| **File Uploads** | Multer | `1.4+` | Multi-image multipart upload, validation, disk storage |
+| **Data Persistence** | Native Node.js `fs/promises` | Built-in | Structured JSON flat-file storage |
+| **Backend Testing** | Jest + Supertest | `29+` | Unit testing, REST API integration test suite |
+| **Frontend Testing** | React Testing Library + Jest | Latest | Component rendering, user event verification |
 
 ---
 
