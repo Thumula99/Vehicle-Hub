@@ -61,9 +61,35 @@ public class CreateCarRequest
     public string FuelType { get; set; } = "Petrol";
     public string Transmission { get; set; } = "Automatic";
     public string Condition { get; set; } = "Used";
+    public string? BodyType { get; set; }
+    public int? EngineCapacity { get; set; }
+    public string? Color { get; set; }
     public string Location { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string? Features { get; set; } // Comma-separated or JSON list
     public List<IFormFile>? Images { get; set; }
+}
+
+public class UpdateCarRequest
+{
+    public string? Title { get; set; }
+    public string? Make { get; set; }
+    public string? Model { get; set; }
+    public int? Year { get; set; }
+    public decimal? Price { get; set; }
+    public decimal? Mileage { get; set; }
+    public string? FuelType { get; set; }
+    public string? Transmission { get; set; }
+    public string? Condition { get; set; }
+    public string? BodyType { get; set; }
+    public int? EngineCapacity { get; set; }
+    public string? Color { get; set; }
+    public string? Location { get; set; }
+    public string? Description { get; set; }
+    public string? Status { get; set; }
+    public string? Features { get; set; }
+    public string? ExistingImages { get; set; } // Comma-separated or JSON list of existing image URLs to keep
+    public List<IFormFile>? Images { get; set; } // New image files to append
 }
 
 public class UpdateCarStatusRequest

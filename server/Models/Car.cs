@@ -43,6 +43,18 @@ public class Car
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
+    [JsonPropertyName("bodyType")]
+    public string? BodyType { get; set; }
+
+    [JsonPropertyName("engineCapacity")]
+    public int? EngineCapacity { get; set; }
+
+    [JsonPropertyName("color")]
+    public string? Color { get; set; }
+
+    [JsonPropertyName("features")]
+    public List<string> Features { get; set; } = new();
+
     [JsonPropertyName("images")]
     public List<string> Images { get; set; } = new();
 

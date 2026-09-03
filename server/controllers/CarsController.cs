@@ -219,7 +219,7 @@ public class CarsController : ControllerBase
         }
 
         var cars = await _dataService.GetCarsAsync();
-        var sellerCars = cars.Where(c => c.SellerId == userId).ToList();
+        var sellerCars = cars.Where(c => c.SellerId == userId).OrderByDescending(c => c.CreatedAt).ToList();
 
         return Ok(new { success = true, cars = sellerCars });
     }
@@ -236,25 +236,44 @@ public class CarsController : ControllerBase
             return StatusCode(403, new { success = false, message = "Forbidden: Only sellers can create vehicle listings" });
         }
 
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Make) ||
+            string.IsNullOrWhiteSpace(request.Model) || request.Year <= 1900 || request.Price <= 0)
+        {
+            return BadRequest(new { success = false, message = "Required vehicle fields are missing or invalid" });
+        }
+
         var imagePaths = new List<string>();
         if (request.Images != null && request.Images.Count > 0)
         {
             var uploadDir = Path.Combine(_env.ContentRootPath, "uploads");
             if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
 
-            foreach (var file in request.Images)
+            foreach (var file in request.Images.Take(8))
             {
-                if (file.Length > 0)
+                if (file.Length > 0 && file.Length <= 5 * 1024 * 1024)
                 {
                     var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    var fileName = $"car-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}{ext}";
-                    var filePath = Path.Combine(uploadDir, fileName);
+                    var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                    if (allowedExts.Contains(ext))
+                    {
+                        var fileName = $"car-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}{ext}";
+                        var filePath = Path.Combine(uploadDir, fileName);
 
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await file.CopyToAsync(stream);
-                    imagePaths.Add($"/uploads/{fileName}");
+                        using var stream = new FileStream(filePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+                        imagePaths.Add($"/uploads/{fileName}");
+                    }
                 }
             }
+        }
+
+        var featureList = new List<string>();
+        if (!string.IsNullOrWhiteSpace(request.Features))
+        {
+            featureList = request.Features
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct()
+                .ToList();
         }
 
         var now = DateTime.UtcNow;
@@ -262,17 +281,21 @@ public class CarsController : ControllerBase
         {
             Id = $"car-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
             SellerId = userId!,
-            Title = request.Title,
-            Make = request.Make,
-            Model = request.Model,
+            Title = request.Title.Trim(),
+            Make = request.Make.Trim(),
+            Model = request.Model.Trim(),
             Year = request.Year,
             Price = request.Price,
             Mileage = request.Mileage,
-            FuelType = request.FuelType,
-            Transmission = request.Transmission,
-            Condition = request.Condition,
-            Location = request.Location,
-            Description = request.Description,
+            FuelType = string.IsNullOrWhiteSpace(request.FuelType) ? "Petrol" : request.FuelType.Trim(),
+            Transmission = string.IsNullOrWhiteSpace(request.Transmission) ? "Automatic" : request.Transmission.Trim(),
+            Condition = string.IsNullOrWhiteSpace(request.Condition) ? "Used" : request.Condition.Trim(),
+            BodyType = request.BodyType?.Trim(),
+            EngineCapacity = request.EngineCapacity,
+            Color = request.Color?.Trim(),
+            Location = request.Location.Trim(),
+            Description = request.Description.Trim(),
+            Features = featureList,
             Images = imagePaths,
             Status = "Available",
             CreatedAt = now,
@@ -287,11 +310,112 @@ public class CarsController : ControllerBase
     }
 
     [Authorize]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateCar(string id, [FromForm] UpdateCarRequest request)
+    {
+        var userId = GetCurrentUserId();
+        var role = GetCurrentUserRole();
+
+        var cars = await _dataService.GetCarsAsync();
+        var car = cars.FirstOrDefault(c => c.Id == id);
+        if (car == null) return NotFound(new { success = false, message = "Vehicle not found" });
+
+        if (role != "admin" && car.SellerId != userId)
+        {
+            return StatusCode(403, new { success = false, message = "Forbidden: You do not own this listing" });
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Title)) car.Title = request.Title.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Make)) car.Make = request.Make.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Model)) car.Model = request.Model.Trim();
+        if (request.Year.HasValue && request.Year.Value > 1900) car.Year = request.Year.Value;
+        if (request.Price.HasValue && request.Price.Value >= 0) car.Price = request.Price.Value;
+        if (request.Mileage.HasValue && request.Mileage.Value >= 0) car.Mileage = request.Mileage.Value;
+        if (!string.IsNullOrWhiteSpace(request.FuelType)) car.FuelType = request.FuelType.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Transmission)) car.Transmission = request.Transmission.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Condition)) car.Condition = request.Condition.Trim();
+        if (!string.IsNullOrWhiteSpace(request.BodyType)) car.BodyType = request.BodyType.Trim();
+        if (request.EngineCapacity.HasValue) car.EngineCapacity = request.EngineCapacity.Value;
+        if (!string.IsNullOrWhiteSpace(request.Color)) car.Color = request.Color.Trim();
+        if (request.Location != null) car.Location = request.Location.Trim();
+        if (request.Description != null) car.Description = request.Description.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            var allowed = new[] { "Available", "Pending", "Sold" };
+            if (allowed.Contains(request.Status.Trim(), StringComparer.OrdinalIgnoreCase))
+            {
+                car.Status = request.Status.Trim();
+            }
+        }
+
+        if (request.Features != null)
+        {
+            car.Features = request.Features
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct()
+                .ToList();
+        }
+
+        // Image Handling
+        var finalImages = new List<string>();
+        if (!string.IsNullOrWhiteSpace(request.ExistingImages))
+        {
+            var existingList = request.ExistingImages
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            finalImages.AddRange(existingList.Where(img => car.Images.Contains(img)));
+        }
+        else if (request.ExistingImages == null)
+        {
+            // If existingImages was not supplied in form, keep existing by default
+            finalImages.AddRange(car.Images);
+        }
+
+        if (request.Images != null && request.Images.Count > 0)
+        {
+            var uploadDir = Path.Combine(_env.ContentRootPath, "uploads");
+            if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
+
+            foreach (var file in request.Images)
+            {
+                if (finalImages.Count >= 8) break;
+                if (file.Length > 0 && file.Length <= 5 * 1024 * 1024)
+                {
+                    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                    if (allowedExts.Contains(ext))
+                    {
+                        var fileName = $"car-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid():N}{ext}";
+                        var filePath = Path.Combine(uploadDir, fileName);
+
+                        using var stream = new FileStream(filePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+                        finalImages.Add($"/uploads/{fileName}");
+                    }
+                }
+            }
+        }
+
+        car.Images = finalImages;
+        car.UpdatedAt = DateTime.UtcNow;
+
+        await _dataService.SaveCarsAsync(cars);
+
+        return Ok(new { success = true, car });
+    }
+
+    [Authorize]
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateCarStatus(string id, [FromBody] UpdateCarStatusRequest request)
     {
         var userId = GetCurrentUserId();
         var role = GetCurrentUserRole();
+
+        var allowed = new[] { "Available", "Pending", "Sold" };
+        if (string.IsNullOrWhiteSpace(request.Status) || !allowed.Contains(request.Status, StringComparer.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { success = false, message = "Status must be Available, Pending, or Sold" });
+        }
 
         var cars = await _dataService.GetCarsAsync();
         var car = cars.FirstOrDefault(c => c.Id == id);
