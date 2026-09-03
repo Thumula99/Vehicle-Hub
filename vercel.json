@@ -1,5 +1,4 @@
 {
-  "$schema": "https://openapi.vercel.sh/edge-functions-schema.json",
   "version": 2,
   "builds": [
     {
@@ -10,9 +9,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/"
+      "dest": "/$1"
     }
-  ],
-  "buildCommand": "cd client && npm run build",
-  "outputDirectory": "client/.next"
+  ]
 }
