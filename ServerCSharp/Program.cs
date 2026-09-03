@@ -68,5 +68,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Listen on the port supplied by Render (or default to 8080) and bind to all interfaces
+app.MapGet("/", () => "Vehicle Hub API is running");
+
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Run($"http://0.0.0.0:{port}");
