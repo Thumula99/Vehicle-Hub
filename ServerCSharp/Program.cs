@@ -17,11 +17,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Configure CORS for Next.js frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowNextJs", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        // Allow local dev and the deployed Vercel URL (replace with your actual Vercel domain)
+        policy.WithOrigins(
+            "http://localhost:3000",
+            "https://vehicle-hub-12da.onrender.com"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader();
     });
 });
 
