@@ -18,4 +18,6 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_HTTP_PORTS=""
 ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
 
+# Fix inotify limit crash on Render by disabling file watchers for config
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
 ENTRYPOINT ["dotnet", "ServerCSharp.dll"]
